@@ -78,15 +78,6 @@ const QUIZ_DATA = {
           name: "IShowSpeed /Darren Jason Watkins Jr./",
           title: "Дэлхийн алдартай Youtuber, Streamer",
           bio: "Эрч хүчтэй, хөгжилтэй контентоороо дэлхий даяар сая сая залуусын дагагчтай болсон цахим ертөнцийн од."
-        },
-        {
-          id: "r1_q6",
-          questionNumber: 6,
-          prompt: "Дараах эрхмийн нэрийг таана уу",
-          image: "assets/images/yamal.jpg",
-          name: "Lamine Yamal",
-          title: "Испани болон FC Barcelona клубийн од хөлбөмбөгчин",
-          bio: "Евро-2024 наадмын аварга, дэлхийн шилдэг залуу тоглогч, хөлбөмбөгийн ертөнцийн шинэ үеийн супер од."
         }
       ]
     },

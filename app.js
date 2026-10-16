@@ -207,7 +207,7 @@ class QuizApp {
         <div class="picture-single-layout">
           <div class="picture-card">
             <div class="picture-frame" id="picframe-${q.id}" onclick="app.toggleBlur('${q.id}')" title="Дарж бүрсийлгэх / тодруулах">
-              <img src="${img}" alt="${name}">
+              <img src="${img}?v=3" alt="${name}">
               <div class="blur-overlay-hint">
                 <span style="font-size: 2rem;">🔍</span>
                 <span style="font-weight: 700; font-size: 0.95rem;">Зургийг тодруулах</span>
