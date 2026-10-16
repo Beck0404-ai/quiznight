@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QUIZ NIGHT | THINK LEFT - Ухаанаа Уралдуулах Үдэш</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700;1,800;1,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="assets/images/sdy_dornogovi_dark.png">
+</head>
+<body>
+
+  <!-- ==================== APP HEADER ==================== -->
+  <header class="app-header">
+    <div class="brand-area" onclick="app.goToSlide(0)">
+      <img src="assets/images/sdy_dornogovi_dark.png" alt="SDY Dornogovi" class="brand-logo-img">
+      <div class="brand-title-wrap">
+        <span class="brand-title">QUIZ NIGHT</span>
+        <span class="brand-subtitle">THINK LEFT • УХААНАА УРАЛДУУЛАХ ҮДЭШ</span>
+      </div>
+    </div>
+
+    <div class="current-round-badge" id="header-round-badge">
+      🏠 НЭЭЛТ
+    </div>
+
+    <!-- Timer Widget in Header -->
+    <div class="timer-widget">
+      <button class="timer-btn" id="timer-play-btn" onclick="app.toggleTimer()" title="Эхлүүлэх / Зогсоох (Space)">▶️</button>
+      <span class="timer-display" id="timer-display">60</span>
+      <button class="timer-btn" onclick="app.resetTimer(30)" title="30 сек">30s</button>
+      <button class="timer-btn" onclick="app.resetTimer(60)" title="60 сек">60s</button>
+      <button class="timer-btn" onclick="app.resetTimer(90)" title="90 сек">90s</button>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-icon" id="btn-sound-toggle" onclick="app.toggleSound()" title="Дуу хаах/нээх (M)">
+        🔊 Дуутай
+      </button>
+
+      <button class="btn-icon" onclick="app.toggleFullscreen()" title="Бүтэн дэлгэц (F)">
+        ⛶ Бүтэн дэлгэц
+      </button>
+
+      <button class="btn-icon btn-scoreboard-toggle" onclick="app.toggleScoreboardDrawer()" title="Онооны самбар (S)">
+        🏆 Онооны самбар
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN SLIDE VIEWPORT ==================== -->
+  <main class="main-viewport" id="slide-viewport">
+    <!-- Populated dynamically by app.js -->
+  </main>
+
+  <!-- ==================== FOOTER NAVIGATION ==================== -->
+  <footer class="app-footer">
+    <div class="nav-controls-group">
+      <button class="btn-nav" id="btn-prev-slide" onclick="app.prevSlide()" title="Өмнөх асуулт (Зүүн сум)">
+        ◄ Өмнөх
+      </button>
+      <button class="btn-nav" id="btn-next-slide" onclick="app.nextSlide()" title="Дараах асуулт (Баруун сум)">
+        Дараах ►
+      </button>
+    </div>
+
+    <!-- Slide Dots -->
+    <div class="nav-dots-container" id="nav-dots-container"></div>
+
+    <div class="nav-controls-group">
+      <button class="btn-nav" onclick="app.resetAllGame()" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4);" title="Шинээр эхлэх">
+        🔄 Шинээр эхлэх
+      </button>
+      <button class="btn-nav" onclick="app.goToSlide(app.slides.length - 1)" style="color: #ffd700; border-color: rgba(255, 215, 0, 0.4);" title="Дүн харах">
+        🏅 Дүн
+      </button>
+    </div>
+  </footer>
+
+  <!-- ==================== SCOREBOARD SIDE DRAWER ==================== -->
+  <div class="drawer-backdrop" id="drawer-backdrop" onclick="app.closeScoreboardDrawer()"></div>
+  <aside class="scoreboard-drawer" id="scoreboard-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">
+        <span>🏆 Багуудын оноо</span>
+      </div>
+      <button class="drawer-close-btn" onclick="app.closeScoreboardDrawer()">&times;</button>
+    </div>
+
+    <div class="drawer-content" id="drawer-teams-list">
+      <!-- Populated dynamically -->
+    </div>
+
+    <div class="drawer-footer">
+      <div class="add-team-row">
+        <input type="text" id="new-team-name" class="add-team-input" placeholder="Шинэ багийн нэр..." onkeydown="if(event.key === 'Enter') { app.addNewTeam(this.value); this.value = ''; }">
+        <button class="btn-nav" onclick="const input = document.getElementById('new-team-name'); app.addNewTeam(input.value); input.value = '';" style="background: var(--cyan-neon); color: #000; border: none; font-weight: 800;">
+          + Нэмэх
+        </button>
+      </div>
+      <p style="font-size: 0.75rem; color: var(--text-muted); text-align: center;">
+        💡 Товчлолууд: [Зүүн/Баруун сум] Шилжих | [Space] Цаг | [S] Самбар | [M] Дуу
+      </p>
+    </div>
+  </aside>
+
+  <!-- Canvas for Confetti -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Scripts -->
+  <script src="quiz-data.js"></script>
+  <script src="audio-system.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
