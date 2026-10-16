@@ -569,6 +569,70 @@ main.main-viewport {
   margin-bottom: 24px;
 }
 
+/* Picture Single Layout (1-р үе: тус тусд нь нэг нэгээр нь харуулах) */
+.picture-single-layout {
+  max-width: 620px;
+  margin: 0 auto 16px auto;
+  width: 100%;
+}
+
+.picture-single-layout .picture-card {
+  border-color: rgba(0, 229, 255, 0.4);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65), 0 0 30px rgba(0, 229, 255, 0.15);
+  border-radius: 24px;
+}
+
+.picture-single-layout .picture-frame {
+  height: 420px;
+  background: radial-gradient(circle at center, #1b213c 0%, #080b18 100%);
+  cursor: pointer;
+  padding: 14px;
+}
+
+.picture-single-layout .picture-frame img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.picture-single-layout .picture-info-panel {
+  padding: 22px 30px;
+  background: rgba(14, 17, 38, 0.96);
+  border-top: 1px solid var(--border-glass);
+  min-height: 120px;
+  text-align: center;
+}
+
+.picture-single-layout .mystery-placeholder {
+  color: #ff5226;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.picture-single-layout .person-name {
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: #ffd700;
+  margin-bottom: 6px;
+  text-shadow: 0 0 16px rgba(255, 215, 0, 0.4);
+}
+
+.picture-single-layout .person-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--cyan-neon);
+  margin-bottom: 8px;
+}
+
+.picture-single-layout .person-bio {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #cbd5e1;
+}
+
 .picture-card {
   background: var(--bg-card);
   border: 1px solid var(--border-glass);

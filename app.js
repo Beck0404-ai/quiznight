@@ -196,31 +196,34 @@ class QuizApp {
   getQuestionSlideHtml(round, q, slideIdx) {
     let contentHtml = '';
 
-    // Round 1: Picture Guessing
+    // Round 1: Picture Guessing (Single picture per slide)
     if (round.id === 'round1') {
+      const img = q.image || (q.items && q.items[0] && q.items[0].image);
+      const name = q.name || (q.items && q.items[0] && q.items[0].name);
+      const title = q.title || (q.items && q.items[0] && q.items[0].title);
+      const bio = q.bio || (q.items && q.items[0] && q.items[0].bio);
+
       contentHtml = `
-        <div class="picture-duo-grid">
-          ${q.items.map((item, i) => `
-            <div class="picture-card">
-              <div class="picture-frame blurred" id="picframe-${q.id}-${i}" onclick="app.toggleBlur('${q.id}', ${i})">
-                <img src="${item.image}" alt="${item.name}">
-                <div class="blur-overlay-hint">
-                  <span style="font-size: 2rem;">🔍</span>
-                  <span style="font-weight: 700; font-size: 0.95rem;">Зургийг тодруулах</span>
-                </div>
-              </div>
-              <div class="picture-info-panel">
-                <div class="mystery-placeholder" id="placeholder-${q.id}-${i}">
-                  ❓ ${item.label}
-                </div>
-                <div class="revealed-info" id="reveal-${q.id}-${i}">
-                  <h3 class="person-name">${item.name}</h3>
-                  <div class="person-title">${item.title}</div>
-                  <p class="person-bio">${item.bio}</p>
-                </div>
+        <div class="picture-single-layout">
+          <div class="picture-card">
+            <div class="picture-frame" id="picframe-${q.id}" onclick="app.toggleBlur('${q.id}')" title="Дарж бүрсийлгэх / тодруулах">
+              <img src="${img}" alt="${name}">
+              <div class="blur-overlay-hint">
+                <span style="font-size: 2rem;">🔍</span>
+                <span style="font-weight: 700; font-size: 0.95rem;">Зургийг тодруулах</span>
               </div>
             </div>
-          `).join('')}
+            <div class="picture-info-panel">
+              <div class="mystery-placeholder" id="placeholder-${q.id}">
+                ❓ Энэ эрхэм хэн бэ?
+              </div>
+              <div class="revealed-info" id="reveal-${q.id}">
+                <h3 class="person-name">${name}</h3>
+                <div class="person-title">${title}</div>
+                <p class="person-bio">${bio}</p>
+              </div>
+            </div>
+          </div>
         </div>
       `;
     }
@@ -323,7 +326,7 @@ class QuizApp {
       <div class="question-header">
         <div class="question-headline">
           <span class="q-badge" style="background: ${round.color};">${round.badge}</span>
-          <span>${q.prompt || `Асуулт №${q.questionNumber}`}</span>
+          <span>${q.prompt ? `Асуулт №${q.questionNumber}: ${q.prompt}` : `Асуулт №${q.questionNumber}`}</span>
         </div>
         <div class="header-q-points" style="font-weight: 700; color: #ffd700; font-size: 0.95rem;">
           Зөв хариулт: +${round.defaultPoints} оноо
@@ -379,7 +382,8 @@ class QuizApp {
 
   // ==================== QUESTION REVEAL LOGIC ====================
   toggleBlur(qId, itemIdx) {
-    const frame = document.getElementById(`picframe-${qId}-${itemIdx}`);
+    const frame = document.getElementById(`picframe-${qId}`) || 
+                  (itemIdx !== undefined ? document.getElementById(`picframe-${qId}-${itemIdx}`) : null);
     if (frame) {
       frame.classList.toggle('blurred');
       sounds.playTick();
@@ -390,6 +394,15 @@ class QuizApp {
     sounds.playCorrect();
 
     if (roundId === 'round1') {
+      // Single picture layout
+      const singleFrame = document.getElementById(`picframe-${qId}`);
+      const singlePlaceholder = document.getElementById(`placeholder-${qId}`);
+      const singleReveal = document.getElementById(`reveal-${qId}`);
+      if (singleFrame) singleFrame.classList.remove('blurred');
+      if (singlePlaceholder) singlePlaceholder.style.display = 'none';
+      if (singleReveal) singleReveal.classList.add('show');
+
+      // Dual layout fallback
       [0, 1].forEach(i => {
         const frame = document.getElementById(`picframe-${qId}-${i}`);
         const placeholder = document.getElementById(`placeholder-${qId}-${i}`);
