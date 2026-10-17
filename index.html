@@ -100,7 +100,21 @@
           + Нэмэх
         </button>
       </div>
-      <p style="font-size: 0.75rem; color: var(--text-muted); text-align: center;">
+      <!-- Cloud Sync (Supabase) -->
+      <div class="supabase-sync-box" style="margin-top: 14px; padding: 10px; background: rgba(0, 0, 0, 0.4); border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.8rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-weight: 700;">☁️ Supabase Cloud Sync</span>
+          <span id="supabase-status-pill" style="font-size: 0.72rem; padding: 2px 8px; border-radius: 10px; background: rgba(148, 163, 184, 0.2); color: #94a3b8;">⚪ Local</span>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <input type="password" id="supabase-key-input" class="add-team-input" style="font-size: 0.75rem; padding: 6px 10px;" placeholder="Supabase Anon Key..." title="Supabase төслийн Anon Public Key-г оруулна уу">
+          <button class="btn-nav" onclick="app.saveSupabaseKey()" style="padding: 6px 12px; font-size: 0.75rem; background: var(--cyan-neon); color: #000; border: none; font-weight: 700;">
+            Холбох
+          </button>
+        </div>
+      </div>
+
+      <p style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 10px;">
         💡 Товчлолууд: [Зүүн/Баруун сум] Шилжих | [Space] Цаг | [S] Самбар | [M] Дуу
       </p>
     </div>
@@ -108,6 +122,10 @@
 
   <!-- Canvas for Confetti -->
   <canvas id="confetti-canvas"></canvas>
+
+  <!-- Supabase JS Client & Config -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
 
   <!-- Scripts -->
   <script src="quiz-data.js"></script>

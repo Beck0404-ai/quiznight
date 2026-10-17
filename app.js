@@ -5,16 +5,28 @@ class QuizApp {
   constructor() {
     this.currentSlideIndex = 0;
     this.slides = []; // Populated dynamically
-    this.teams = this.loadTeams();
+    this.teams = this.getDefaultTeams();
+    this.revealedAnswers = {}; // track question reveal states { [qId]: true }
+    this.chosenOptions = {}; // track clicked options { [qId]: { [key]: 'correct'|'wrong' } }
     this.timerDuration = 60; // seconds
     this.timerRemaining = 60;
     this.timerInterval = null;
     this.isTimerRunning = false;
-    this.revealedAnswers = {}; // track question reveal states
     this.audioCanvas = null;
     this.audioAnimFrame = null;
 
     this.init();
+  }
+
+  getDefaultTeams() {
+    return [
+      { id: 'team_1', name: 'Баг 1 - Шонхорууд', score: 0, r1: 0, r2: 0, r3: 0, r4: 0, bonus: 0, color: '#00e5ff' },
+      { id: 'team_2', name: 'Баг 2 - Ирвэсүүд', score: 0, r1: 0, r2: 0, r3: 0, r4: 0, bonus: 0, color: '#ff5226' },
+      { id: 'team_3', name: 'Баг 3 - Чононууд', score: 0, r1: 0, r2: 0, r3: 0, r4: 0, bonus: 0, color: '#ffd700' },
+      { id: 'team_4', name: 'Баг 4 - Галт шувуу', score: 0, r1: 0, r2: 0, r3: 0, r4: 0, bonus: 0, color: '#e040fb' },
+      { id: 'team_5', name: 'Баг 5 - Сүлд', score: 0, r1: 0, r2: 0, r3: 0, r4: 0, bonus: 0, color: '#00e676' },
+      { id: 'team_6', name: 'Баг 6 - Тэмүүлэл', score: 0, r1: 0, r2: 0, r3: 0, r4: 0, bonus: 0, color: '#ff4081' }
+    ];
   }
 
   loadTeams() {
@@ -26,31 +38,225 @@ class QuizApp {
         console.error('Error loading saved teams', e);
       }
     }
-    // Default 6 teams
-    return [
-      { id: 'team_1', name: 'Баг 1 - Шонхорууд', score: 0, r1: 0, r2: 0, r3: 0, r4: 0, bonus: 0, color: '#00e5ff' },
-      { id: 'team_2', name: 'Баг 2 - Ирвэсүүд', score: 0, r1: 0, r2: 0, r3: 0, r4: 0, bonus: 0, color: '#ff5226' },
-      { id: 'team_3', name: 'Баг 3 - Чононууд', score: 0, r1: 0, r2: 0, r3: 0, r4: 0, bonus: 0, color: '#ffd700' },
-      { id: 'team_4', name: 'Баг 4 - Галт шувуу', score: 0, r1: 0, r2: 0, r3: 0, r4: 0, bonus: 0, color: '#e040fb' },
-      { id: 'team_5', name: 'Баг 5 - Сүлд', score: 0, r1: 0, r2: 0, r3: 0, r4: 0, bonus: 0, color: '#00e676' },
-      { id: 'team_6', name: 'Баг 6 - Тэмүүлэл', score: 0, r1: 0, r2: 0, r3: 0, r4: 0, bonus: 0, color: '#ff4081' }
-    ];
+    return this.getDefaultTeams();
   }
 
-  saveTeams() {
+  getStatePayload() {
+    return {
+      currentSlideIndex: this.currentSlideIndex,
+      teams: this.teams,
+      revealedAnswers: this.revealedAnswers,
+      chosenOptions: this.chosenOptions,
+      updatedAt: Date.now()
+    };
+  }
+
+  saveState() {
+    const payload = this.getStatePayload();
+    // 1. LocalStorage for instant persistence on refresh
+    localStorage.setItem('sdy_quiz_state_v2', JSON.stringify(payload));
     localStorage.setItem('sdy_quiz_teams_v1', JSON.stringify(this.teams));
+
     this.renderScoreboardDrawer();
     this.renderQuickScoreBars();
     this.renderPodium();
+
+    // 2. Supabase Cloud Sync
+    if (typeof supabaseSync !== 'undefined' && supabaseSync.isReady) {
+      supabaseSync.saveState(payload);
+    }
+  }
+
+  saveTeams() {
+    this.saveState();
+  }
+
+  loadState() {
+    // 1. Try unified state v2
+    const saved = localStorage.getItem('sdy_quiz_state_v2');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.currentSlideIndex === 'number') {
+          this.currentSlideIndex = parsed.currentSlideIndex;
+        }
+        if (Array.isArray(parsed.teams) && parsed.teams.length > 0) {
+          this.teams = parsed.teams;
+        }
+        if (parsed.revealedAnswers && typeof parsed.revealedAnswers === 'object') {
+          this.revealedAnswers = parsed.revealedAnswers;
+        }
+        if (parsed.chosenOptions && typeof parsed.chosenOptions === 'object') {
+          this.chosenOptions = parsed.chosenOptions;
+        }
+        return;
+      } catch (e) {
+        console.error('Error parsing sdy_quiz_state_v2', e);
+      }
+    }
+
+    // 2. Fallback to teams v1
+    this.teams = this.loadTeams();
+  }
+
+  async syncFromSupabase() {
+    if (typeof supabaseSync === 'undefined' || !supabaseSync.isReady) return;
+    const remoteData = await supabaseSync.loadState();
+    if (remoteData) {
+      console.log('☁️ Synced state from Supabase:', remoteData);
+      this.applyRemoteUpdate(remoteData);
+    }
+  }
+
+  applyRemoteUpdate(remoteData) {
+    if (!remoteData) return;
+    let changed = false;
+
+    if (Array.isArray(remoteData.teams) && remoteData.teams.length > 0) {
+      this.teams = remoteData.teams;
+      changed = true;
+    }
+    if (remoteData.revealed_answers && typeof remoteData.revealed_answers === 'object') {
+      this.revealedAnswers = Object.assign({}, this.revealedAnswers, remoteData.revealed_answers);
+      changed = true;
+    }
+    if (remoteData.chosen_options && typeof remoteData.chosen_options === 'object') {
+      this.chosenOptions = Object.assign({}, this.chosenOptions, remoteData.chosen_options);
+      changed = true;
+    }
+    if (typeof remoteData.current_slide === 'number' && remoteData.current_slide !== this.currentSlideIndex) {
+      this.currentSlideIndex = remoteData.current_slide;
+      changed = true;
+    }
+
+    if (changed) {
+      localStorage.setItem('sdy_quiz_state_v2', JSON.stringify(this.getStatePayload()));
+      localStorage.setItem('sdy_quiz_teams_v1', JSON.stringify(this.teams));
+      this.renderScoreboardDrawer();
+      this.applyRevealedAnswers();
+      this.updateSlideView();
+    }
+  }
+
+  saveSupabaseKey() {
+    const input = document.getElementById('supabase-key-input');
+    if (!input || !input.value.trim()) {
+      alert('Supabase Anon Key-г оруулна уу.');
+      return;
+    }
+    const key = input.value.trim();
+    if (typeof supabaseSync !== 'undefined') {
+      supabaseSync.setAnonKey(key);
+      this.updateSupabaseStatus();
+      this.saveState();
+      this.showToast('✅ Supabase амжилттай холбогдлоо!');
+    }
+  }
+
+  updateSupabaseStatus() {
+    const pill = document.getElementById('supabase-status-pill');
+    const input = document.getElementById('supabase-key-input');
+    const isReady = typeof supabaseSync !== 'undefined' && supabaseSync.isReady;
+
+    if (pill) {
+      if (isReady) {
+        pill.innerHTML = '🟢 Online (Synced)';
+        pill.style.background = 'rgba(0, 230, 118, 0.2)';
+        pill.style.color = '#00e676';
+      } else {
+        pill.innerHTML = '⚪ Local';
+        pill.style.background = 'rgba(148, 163, 184, 0.2)';
+        pill.style.color = '#94a3b8';
+      }
+    }
+
+    if (input && typeof supabaseSync !== 'undefined' && supabaseSync.anonKey) {
+      input.value = supabaseSync.anonKey;
+    }
+  }
+
+  applyRevealedAnswers() {
+    // 1. Revealed question states
+    if (this.revealedAnswers && typeof this.revealedAnswers === 'object') {
+      Object.keys(this.revealedAnswers).forEach(qId => {
+        if (!this.revealedAnswers[qId]) return;
+
+        // Round 1
+        const picFrame = document.getElementById(`picframe-${qId}`);
+        const placeholder = document.getElementById(`placeholder-${qId}`);
+        const reveal = document.getElementById(`reveal-${qId}`);
+        if (picFrame) picFrame.classList.remove('blurred');
+        if (placeholder) placeholder.style.display = 'none';
+        if (reveal) reveal.classList.add('show');
+
+        // Round 2
+        const qR2 = QUIZ_DATA.rounds[1].questions.find(item => item.id === qId);
+        if (qR2) {
+          qR2.options.forEach(opt => {
+            const btn = document.getElementById(`opt-${qId}-${opt.key}`);
+            if (btn) {
+              btn.classList.add('locked');
+              if (opt.correct) btn.classList.add('correct');
+            }
+          });
+          const explain = document.getElementById(`explain-${qId}`);
+          if (explain) explain.classList.add('show');
+        }
+
+        // Round 3
+        const audioCard = document.getElementById(`audio-answer-${qId}`);
+        if (audioCard) audioCard.classList.add('show');
+
+        // Round 4
+        const qR4 = QUIZ_DATA.rounds[3].questions.find(item => item.id === qId);
+        if (qR4 && qR4.options) {
+          qR4.options.forEach(opt => {
+            const btn = document.getElementById(`opt-${qId}-${opt.key}`);
+            if (btn) {
+              btn.classList.add('locked');
+              if (opt.correct) btn.classList.add('correct');
+            }
+          });
+        }
+        const thematicCard = document.getElementById(`thematic-answer-${qId}`);
+        if (thematicCard) thematicCard.classList.add('show');
+      });
+    }
+
+    // 2. Clicked options (correct or wrong before full reveal)
+    if (this.chosenOptions && typeof this.chosenOptions === 'object') {
+      Object.keys(this.chosenOptions).forEach(qId => {
+        const opts = this.chosenOptions[qId];
+        if (opts && typeof opts === 'object') {
+          Object.keys(opts).forEach(key => {
+            const btn = document.getElementById(`opt-${qId}-${key}`);
+            if (btn) {
+              btn.classList.add(opts[key]);
+            }
+          });
+        }
+      });
+    }
   }
 
   init() {
+    this.loadState();
     this.buildSlideDeck();
     this.renderSlides();
     this.bindEvents();
     this.renderScoreboardDrawer();
+    this.applyRevealedAnswers();
     this.updateSlideView();
     this.initAudioVisualizer();
+    this.updateSupabaseStatus();
+
+    // Check Supabase in background
+    if (typeof supabaseSync !== 'undefined' && supabaseSync.isReady) {
+      this.syncFromSupabase();
+      supabaseSync.subscribeToChanges(remoteData => {
+        this.applyRemoteUpdate(remoteData);
+      });
+    }
   }
 
   // ==================== SLIDE DECK BUILDER ====================
@@ -392,6 +598,7 @@ class QuizApp {
 
   revealQuestionAnswer(qId, roundId) {
     sounds.playCorrect();
+    this.revealedAnswers[qId] = true;
 
     if (roundId === 'round1') {
       // Single picture layout
@@ -445,14 +652,20 @@ class QuizApp {
       const card = document.getElementById(`thematic-answer-${qId}`);
       if (card) card.classList.add('show');
     }
+
+    this.saveState();
   }
 
   chooseOption(qId, key, isCorrect) {
     const btn = document.getElementById(`opt-${qId}-${key}`);
     if (btn && !btn.classList.contains('locked')) {
+      if (!this.chosenOptions[qId]) this.chosenOptions[qId] = {};
+      this.chosenOptions[qId][key] = isCorrect ? 'correct' : 'wrong';
+
       if (isCorrect) {
         sounds.playCorrect();
         btn.classList.add('correct');
+        this.revealedAnswers[qId] = true;
         const explain = document.getElementById(`explain-${qId}`);
         if (explain) explain.classList.add('show');
         const thematicAnswer = document.getElementById(`thematic-answer-${qId}`);
@@ -461,6 +674,7 @@ class QuizApp {
         sounds.playWrong();
         btn.classList.add('wrong');
       }
+      this.saveState();
     }
   }
 
@@ -712,6 +926,7 @@ class QuizApp {
     sounds.stopAll();
     this.stopVisualizer();
     this.updateSlideView();
+    this.saveState();
 
     // Trigger fanfare if entered podium
     if (this.slides[index].type === 'podium') {
@@ -858,10 +1073,15 @@ class QuizApp {
   }
 
   resetAllGame() {
-    if (confirm('Бүх оноо болон тоглоомыг шинээр эхлүүлэх үү?')) {
+    if (confirm('Бүх оноо, хариулт болон тоглоомыг шинээр эхлүүлэх үү?')) {
+      localStorage.removeItem('sdy_quiz_state_v2');
       localStorage.removeItem('sdy_quiz_teams_v1');
-      this.teams = this.loadTeams();
-      this.saveTeams();
+      this.teams = this.getDefaultTeams();
+      this.revealedAnswers = {};
+      this.chosenOptions = {};
+      this.currentSlideIndex = 0;
+      this.saveState();
+      this.renderSlides();
       this.goToSlide(0);
       this.showToast('Тоглоом шинээр эхэллээ!');
     }
